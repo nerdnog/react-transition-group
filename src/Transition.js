@@ -13,6 +13,17 @@ export const ENTERING = 'entering';
 export const ENTERED = 'entered';
 export const EXITING = 'exiting';
 
+// On React 19, whether the child is built to take a ref: a DOM element, or a
+// forwardRef component (also inside memo). Any other child, such as a plain
+// function component, would get our ref as an ordinary prop and could pass it
+// on in place of its own; a Fragment warns about it.
+function takesRef(type) {
+  if (typeof type === 'string') return true;
+  if (type == null || typeof type !== 'object') return false;
+  const inner = type.$$typeof === Symbol.for('react.memo') ? type.type : type;
+  return inner != null && inner.$$typeof === Symbol.for('react.forward_ref');
+}
+
 /**
  * The Transition component lets you describe a transition from one component
  * state to another _over time_ with a simple declarative API. Most commonly
@@ -417,7 +428,7 @@ class Transition extends React.Component {
       // finding its element.
       content = React.cloneElement(
         child,
-        !canFindDOMNode && !this.props.nodeRef
+        !canFindDOMNode && !this.props.nodeRef && takesRef(child.type)
           ? { ...childProps, ref: this.getChildRef(child.props.ref) }
           : childProps
       );

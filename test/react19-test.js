@@ -55,6 +55,17 @@ it("keeps the child's own object ref and callback ref working", async () => {
   await enter(<div ref={cb} />);
   expect(cb).toHaveBeenCalledWith(expect.any(HTMLDivElement));
 });
+it("keeps a function component's own ref when it spreads its props", async () => {
+  let local;
+  function Panel({ id, ...rest }) {
+    local = React.useRef(null);
+    return <div id={id} ref={local} {...rest} />;
+  }
+  const c = await enter(<Panel id="panel" />);
+  const div = c.querySelector('#panel');
+  expect(local.current).toBe(div);
+  expect(div.classList).toContain('fade-enter-done');
+});
 it('works inside StrictMode', async () => {
   const c = await enter(<div id="sm" />, (x) => (
     <React.StrictMode>{x}</React.StrictMode>
@@ -111,7 +122,88 @@ it('animates SwitchTransition children without nodeRef', async () => {
   );
 });
 
+const on18 = canFindDOMNode ? it : it.skip;
+on18('gives the child no ref on React 16-18', () => {
+  const seen = [];
+  const Fwd = React.forwardRef((props, ref) => {
+    seen.push(ref);
+    return <div ref={ref} />;
+  });
+  const own = React.createRef();
+  render(
+    <Transition in timeout={0}>
+      <Fwd />
+    </Transition>
+  );
+  render(
+    <Transition in timeout={0}>
+      <Fwd ref={own} />
+    </Transition>
+  );
+  expect(seen).toHaveLength(2);
+  expect(seen[0]).toBeNull();
+  expect(seen[1]).toBe(own);
+});
+
 const on19 = canFindDOMNode ? it.skip : it;
+on19('gives no ref to class or plain function children', () => {
+  const clone = jest.spyOn(React, 'cloneElement');
+  class Klass extends React.Component {
+    render() {
+      return <p />;
+    }
+  }
+  let fnProps;
+  const Fn = (props) => {
+    fnProps = props;
+    return <i />;
+  };
+  render(
+    <Transition in timeout={0}>
+      <Klass />
+    </Transition>
+  );
+  render(
+    <Transition in timeout={0}>
+      <Fn />
+    </Transition>
+  );
+  const cloned = clone.mock.results
+    .map((result) => result.value)
+    .filter((el) => el.type === Klass || el.type === Fn);
+  clone.mockRestore();
+  expect(cloned).toHaveLength(2);
+  cloned.forEach((el) => expect(el.props).not.toHaveProperty('ref'));
+  expect(fnProps).not.toHaveProperty('ref');
+});
+on19(
+  'gives a ref to memo(forwardRef) children, not to memo of a function',
+  () => {
+    let fwdRef, fnProps;
+    const MemoFwd = React.memo(
+      React.forwardRef((props, ref) => {
+        fwdRef = ref;
+        return <b ref={ref} />;
+      })
+    );
+    const MemoFn = React.memo((props) => {
+      fnProps = props;
+      return <i />;
+    });
+    render(
+      <Transition in timeout={0}>
+        <MemoFwd />
+      </Transition>
+    );
+    render(
+      <Transition in timeout={0}>
+        <MemoFn />
+      </Transition>
+    );
+    expect(typeof fwdRef).toBe('function');
+    expect(fnProps).not.toHaveProperty('ref');
+  }
+);
 on19("keeps the child's callback-ref cleanup", async () => {
   const seen = [];
   const cleanup = jest.fn();
