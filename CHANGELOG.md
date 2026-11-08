@@ -1,3 +1,9 @@
+## 4.5.0
+
+- First release of `@nerdnog/react-transition-group`, an unofficial fork of react-transition-group 4.4.5.
+- Works on React 19 without `nodeRef`: the element is found through React's internal records, then the child's ref. Nothing changes on React 16 to 18.
+- Development warnings when the element comes from the child's ref, or can't be found.
+
 ## [4.4.5](https://github.com/reactjs/react-transition-group/compare/v4.4.4...v4.4.5) (2022-08-01)
 
 
