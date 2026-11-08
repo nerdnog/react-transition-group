@@ -110,3 +110,34 @@ it('animates SwitchTransition children without nodeRef', async () => {
     expect(r.container.querySelector('#s2.fade-enter-done')).not.toBeNull()
   );
 });
+
+const on19 = canFindDOMNode ? it.skip : it;
+on19("keeps the child's callback-ref cleanup", async () => {
+  const seen = [];
+  const cleanup = jest.fn();
+  const cb = (n) => {
+    seen.push(n);
+    return cleanup;
+  };
+  const r = render(
+    <CSSTransition in timeout={10} classNames="fade">
+      <div ref={(n) => cb(n)} />
+    </CSSTransition>
+  );
+  r.rerender(
+    <CSSTransition in timeout={10} classNames="fade">
+      <div ref={(n) => cb(n)} />
+    </CSSTransition>
+  );
+  r.unmount();
+  expect(seen).not.toContain(null);
+  expect(cleanup).toHaveBeenCalled();
+});
+on19('animates a Fragment child without a ref warning', async () => {
+  const c = await enter(
+    <>
+      <div id="f1" />
+    </>
+  );
+  expect(c.querySelector('#f1')).not.toBeNull();
+});

@@ -365,8 +365,16 @@ class Transition extends React.Component {
       this.childRefOuter = outerRef;
       this.childRefCallback = (node) => {
         this.childRef.current = node;
-        if (typeof outerRef === 'function') outerRef(node);
-        else if (outerRef != null) outerRef.current = node;
+        if (typeof outerRef === 'function') {
+          // React 19: keep a cleanup function the child's ref returns.
+          const cleanup = outerRef(node);
+          if (typeof cleanup === 'function') {
+            return () => {
+              this.childRef.current = null;
+              cleanup();
+            };
+          }
+        } else if (outerRef != null) outerRef.current = node;
       };
     }
     return this.childRefCallback;
