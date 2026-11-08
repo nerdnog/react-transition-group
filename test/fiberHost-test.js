@@ -31,6 +31,7 @@ it('returns the element on screen after the child changes type', () => {
       <span />
     </Probe>
   );
+  expect(findHostNode(ref.current).tagName).toBe('SPAN');
   result.rerender(
     <Probe ref={ref}>
       <b />
