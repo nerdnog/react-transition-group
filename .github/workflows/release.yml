@@ -7,6 +7,8 @@ permissions:
   id-token: write
 jobs:
   publish:
+    # A pre-release would otherwise publish to npm's `latest` tag.
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -18,7 +20,12 @@ jobs:
       - run: npm run lint && npm run testonly
       - run: npm run build && npm run check:layout
       - name: Tag matches version
-        run: test "${{ github.event.release.tag_name }}" = "v$(node -p "require('./lib/package.json').version")"
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: test "$TAG" = "v$(node -p "require('./lib/package.json').version")"
+      # The built lib/ doesn't depend on the installed React.
+      - name: Test on React 19
+        run: npm install --no-save react@19 react-dom@19 && npm run testonly && npm run smoke:prod
       - run: npm publish ./lib --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

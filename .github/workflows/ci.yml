@@ -7,19 +7,22 @@ on:
     branches: [main]
   schedule:
     - cron: '0 9 * * 1'
+  # Runs react-next from the Actions tab. GitHub turns the schedule off after
+  # 60 days without activity in a public repo; a manual run turns it back on.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   test:
-    if: github.event_name != 'schedule'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       # Otherwise how would we know if a specific React version caused the failure?
       fail-fast: false
       matrix:
-        react: ['18', '19']
+        react: ['18', '19.0', '19']
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -33,12 +36,12 @@ jobs:
       - run: npm run build
       - run: npm run check:layout
       - run: npm run smoke:prod
-        if: matrix.react == '19'
+        if: startsWith(matrix.react, '19')
 
   # A failure here means a coming React release breaks the internal lookup,
   # before users see it.
   react-next:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
