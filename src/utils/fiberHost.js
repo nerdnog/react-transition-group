@@ -1,9 +1,10 @@
 /**
+ * @license
  * findHostNode and its helpers are ported from React's
  * packages/react-reconciler/src/ReactFiberTreeReflection.js at
  * https://github.com/facebook/react/blob/v19.3.1/packages/react-reconciler/src/ReactFiberTreeReflection.js
  * Modifications: Flow types stripped, constants inlined, React's thrown
- * invariants return null, dev-only code dropped.
+ * invariants return null, React's comments removed or condensed.
  *
  * MIT License
  *
@@ -192,8 +193,9 @@ function findCurrentHostFiberImpl(node) {
 }
 
 /**
- * Returns what ReactDOM.findDOMNode(instance) would: the first DOM element or
- * text node rendered by a class component. Never throws; returns null when
+ * Returns the first DOM element or text node rendered by a class component,
+ * read from React's fiber internals as React 17 and later lay them out. Used
+ * on React 19, which has no findDOMNode. Never throws; returns null when
  * React's records are missing or the component is unmounted.
  */
 export function findHostNode(instance) {

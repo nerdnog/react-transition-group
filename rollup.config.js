@@ -1,3 +1,4 @@
+import fs from 'fs';
 import nodeResolve from 'rollup-plugin-node-resolve';
 import babel from 'rollup-plugin-babel';
 import commonjs from 'rollup-plugin-commonjs';
@@ -10,6 +11,12 @@ const globals = {
   react: 'React',
   'react-dom': 'ReactDOM',
 };
+
+// terser drops the MIT notice in src/utils/fiberHost.js along with the
+// constants it sits on, so the min bundle carries it as a banner.
+const reactNotice = fs
+  .readFileSync('./src/utils/fiberHost.js', 'utf8')
+  .match(/^\/\*\*[\s\S]*?\*\//)[0];
 
 const babelOptions = {
   exclude: /node_modules/,
@@ -48,6 +55,7 @@ export default [
       format: 'umd',
       name,
       globals,
+      banner: reactNotice,
     },
     external: Object.keys(globals),
     plugins: [
