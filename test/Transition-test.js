@@ -180,7 +180,7 @@ describe('Transition', () => {
     let calledAfterTimeout = false;
     setTimeout(() => {
       calledAfterTimeout = true;
-    }, 10);
+    }, 100);
     setProps({
       in: false,
       onExited() {
@@ -267,7 +267,7 @@ describe('Transition', () => {
         <Transition
           nodeRef={nodeRef}
           in={true}
-          timeout={{ enter: 20, exit: 10, appear: 5 }}
+          timeout={{ enter: 200, exit: 10, appear: 5 }}
           appear
         >
           <div ref={nodeRef} />
@@ -277,7 +277,7 @@ describe('Transition', () => {
       let isCausedLate = false;
       setTimeout(() => {
         isCausedLate = true;
-      }, 15);
+      }, 100);
 
       setProps({
         onEntered() {

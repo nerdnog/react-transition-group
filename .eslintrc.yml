@@ -1,4 +1,6 @@
 parser: babel-eslint
+parserOptions:
+  requireConfigFile: false
 extends:
   - jason/react
   - plugin:jsx-a11y/recommended

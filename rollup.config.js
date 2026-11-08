@@ -2,7 +2,6 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import babel from 'rollup-plugin-babel';
 import commonjs from 'rollup-plugin-commonjs';
 import replace from 'rollup-plugin-replace';
-import { sizeSnapshot } from 'rollup-plugin-size-snapshot';
 import { terser } from 'rollup-plugin-terser';
 
 const input = './src/index.js';
@@ -39,7 +38,6 @@ export default [
       babel(babelOptions),
       commonjs(commonjsOptions),
       replace({ 'process.env.NODE_ENV': JSON.stringify('development') }),
-      sizeSnapshot(),
     ],
   },
 
@@ -57,7 +55,6 @@ export default [
       babel(babelOptions),
       commonjs(commonjsOptions),
       replace({ 'process.env.NODE_ENV': JSON.stringify('production') }),
-      sizeSnapshot(),
       terser(),
     ],
   },

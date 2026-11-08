@@ -2,7 +2,6 @@ import hasClass from 'dom-helpers/hasClass';
 import CSSTransition from '../src/CSSTransition';
 
 let React;
-let ReactDOM;
 let TransitionGroup;
 let act;
 let render;
@@ -23,11 +22,10 @@ describe('CSSTransitionGroup', () => {
   }
 
   beforeEach(() => {
-    jest.resetModuleRegistry();
+    jest.resetModules();
     jest.useFakeTimers();
 
     React = require('react');
-    ReactDOM = require('react-dom');
     const testUtils = require('./utils');
     act = testUtils.act;
     const baseRender = testUtils.render;
@@ -208,14 +206,14 @@ describe('CSSTransitionGroup', () => {
     }
 
     render(<Component />, container);
-    render(
+    const { unmount } = render(
       <Component>
         <YoloTransition key="yolo" id="yolo" />
       </Component>,
       container
     );
 
-    ReactDOM.unmountComponentAtNode(container);
+    unmount();
 
     // Testing that no exception is thrown here, as the timeout has been cleared.
     act(() => {
