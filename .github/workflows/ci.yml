@@ -2,75 +2,53 @@ name: CI
 
 on:
   push:
-    branches: [master, alpha]
+    branches: [main]
   pull_request:
-    branches: [master, alpha]
+    branches: [main]
+  schedule:
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-
     strategy:
       # Otherwise how would we know if a specific React version caused the failure?
       fail-fast: false
       matrix:
-        REACT_DIST: [16, 17, 18]
+        react: ['18', '19']
     steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js 14
-        uses: actions/setup-node@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 14
-          cache: 'npm'
-      - run: yarn
-      - run: yarn add react@${{ matrix.REACT_DIST }} react-dom@${{ matrix.REACT_DIST }}
-      - run: yarn add @testing-library/react@12
-        if: matrix.REACT_DIST == '17' || matrix.REACT_DIST == '16'
-      - run: yarn --cwd www
-      # Test whether the web page can be built successfully or not
-      - run: yarn --cwd www build
-      - run: yarn test
-      - name: Dry release
-        uses: cycjimmy/semantic-release-action@v2
-        with:
-          dry_run: true
-          semantic_version: 17
-          branches: |
-            [
-              'master',
-              {name: 'alpha', prerelease: true}
-            ]
-        env:
-          # These are not available on forks but we need them on actual runs to verify everything is set up.
-          # Otherwise we might fail in the middle of a release
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save react@${{ matrix.react }} react-dom@${{ matrix.react }}
+      - run: npm run lint
+      - run: npm run testonly
+      - run: npm run build
+      - run: npm run check:layout
+      - run: npm run smoke:prod
+        if: matrix.react == '19'
 
-  release:
-    needs: test
+  # A failure here means a coming React release breaks the internal lookup,
+  # before users see it.
+  react-next:
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'reactjs/react-transition-group' &&
-      contains('refs/heads/master,refs/heads/alpha',
-      github.ref) && github.event_name == 'push' }}
     steps:
-      - uses: styfle/cancel-workflow-action@0.9.0
-      - uses: actions/checkout@v2
-      - name: Use Node.js 14
-        uses: actions/setup-node@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 14
-          cache: 'npm'
-      - run: yarn
-      - run: yarn build
-      - name: Release
-        uses: cycjimmy/semantic-release-action@v2
-        with:
-          semantic_version: 17
-          branches: |
-            [
-              'master',
-              {name: 'alpha', prerelease: true}
-            ]
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save react@canary react-dom@canary
+      - run: npm run testonly
+      - run: npm run build
+      - run: npm run check:layout
+      - run: npm run smoke:prod
