@@ -1,11 +1,11 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import ReactDOM from 'react-dom';
 
 import config from './config';
 import { timeoutsShape } from './utils/PropTypes';
 import TransitionGroupContext from './TransitionGroupContext';
 import { forceReflow } from './utils/reflow';
+import { findNode, canFindDOMNode } from './utils/findNode';
 
 export const UNMOUNTED = 'unmounted';
 export const EXITED = 'exited';
@@ -126,6 +126,7 @@ class Transition extends React.Component {
     let initialStatus;
 
     this.appearStatus = null;
+    this.childRef = { current: null };
 
     if (props.in) {
       if (appear) {
@@ -224,7 +225,7 @@ class Transition extends React.Component {
         if (this.props.unmountOnExit || this.props.mountOnEnter) {
           const node = this.props.nodeRef
             ? this.props.nodeRef.current
-            : ReactDOM.findDOMNode(this);
+            : findNode(this, this.childRef);
           // https://github.com/reactjs/react-transition-group/pull/749
           // With unmountOnExit or mountOnEnter, the enter animation should happen at the transition between `exited` and `entering`.
           // To make the animation happen,  we have to separate each rendering and avoid being processed as batched.
@@ -244,7 +245,7 @@ class Transition extends React.Component {
     const appearing = this.context ? this.context.isMounting : mounting;
     const [maybeNode, maybeAppearing] = this.props.nodeRef
       ? [appearing]
-      : [ReactDOM.findDOMNode(this), appearing];
+      : [findNode(this, this.childRef), appearing];
 
     const timeouts = this.getTimeouts();
     const enterTimeout = appearing ? timeouts.appear : timeouts.enter;
@@ -275,7 +276,7 @@ class Transition extends React.Component {
     const timeouts = this.getTimeouts();
     const maybeNode = this.props.nodeRef
       ? undefined
-      : ReactDOM.findDOMNode(this);
+      : findNode(this, this.childRef);
 
     // no exit animation skip right to EXITED
     if (!exit || config.disabled) {
@@ -336,7 +337,7 @@ class Transition extends React.Component {
     this.setNextCallback(handler);
     const node = this.props.nodeRef
       ? this.props.nodeRef.current
-      : ReactDOM.findDOMNode(this);
+      : findNode(this, this.childRef);
 
     const doesNotHaveTimeoutOrListener =
       timeout == null && !this.props.addEndListener;
@@ -355,6 +356,20 @@ class Transition extends React.Component {
     if (timeout != null) {
       setTimeout(this.nextCallback, timeout);
     }
+  }
+
+  // Returns the same callback for as long as `outerRef` is unchanged, so
+  // React doesn't detach and reattach it on every render.
+  getChildRef(outerRef) {
+    if (!this.childRefCallback || this.childRefOuter !== outerRef) {
+      this.childRefOuter = outerRef;
+      this.childRefCallback = (node) => {
+        this.childRef.current = node;
+        if (typeof outerRef === 'function') outerRef(node);
+        else if (outerRef != null) outerRef.current = node;
+      };
+    }
+    return this.childRefCallback;
   }
 
   render() {
@@ -385,12 +400,25 @@ class Transition extends React.Component {
       ...childProps
     } = this.props;
 
+    let content;
+    if (typeof children === 'function') {
+      content = children(status, childProps);
+    } else {
+      const child = React.Children.only(children);
+      // Without findDOMNode, keep a ref to the child as a fallback for
+      // finding its element.
+      content = React.cloneElement(
+        child,
+        !canFindDOMNode && !this.props.nodeRef
+          ? { ...childProps, ref: this.getChildRef(child.props.ref) }
+          : childProps
+      );
+    }
+
     return (
       // allows for nested Transitions
       <TransitionGroupContext.Provider value={null}>
-        {typeof children === 'function'
-          ? children(status, childProps)
-          : React.cloneElement(React.Children.only(children), childProps)}
+        {content}
       </TransitionGroupContext.Provider>
     );
   }

@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import ReactDOM from 'react-dom';
 import TransitionGroup from './TransitionGroup';
+import { findNode } from './utils/findNode';
 
 /**
  * The `<ReplaceTransition>` component is a specialized `Transition` component
@@ -29,9 +29,7 @@ class ReplaceTransition extends React.Component {
 
     if (child.props[handler]) child.props[handler](...originalArgs);
     if (this.props[handler]) {
-      const maybeNode = child.props.nodeRef
-        ? undefined
-        : ReactDOM.findDOMNode(this);
+      const maybeNode = child.props.nodeRef ? undefined : findNode(this);
 
       this.props[handler](maybeNode);
     }

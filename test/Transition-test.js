@@ -1,6 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import * as fiberHost from '../src/utils/fiberHost';
+import { canFindDOMNode } from '../src/utils/findNode';
+
 import { render, waitFor } from './utils';
 
 import Transition, {
@@ -199,7 +202,10 @@ describe('Transition', () => {
 
   it('should use `React.findDOMNode` when `nodeRef` is not provided', () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    const findDOMNodeSpy = jest.spyOn(ReactDOM, 'findDOMNode');
+    // On React 19 there is no findDOMNode; its replacement is findHostNode.
+    const findDOMNodeSpy = canFindDOMNode
+      ? jest.spyOn(ReactDOM, 'findDOMNode')
+      : jest.spyOn(fiberHost, 'findHostNode');
 
     render(
       <Transition in appear timeout={0}>
@@ -213,7 +219,9 @@ describe('Transition', () => {
   });
 
   it('should not use `React.findDOMNode` when `nodeRef` is provided', () => {
-    const findDOMNodeSpy = jest.spyOn(ReactDOM, 'findDOMNode');
+    const findDOMNodeSpy = canFindDOMNode
+      ? jest.spyOn(ReactDOM, 'findDOMNode')
+      : jest.spyOn(fiberHost, 'findHostNode');
 
     const nodeRef = React.createRef();
     render(

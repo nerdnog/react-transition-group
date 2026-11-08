@@ -1,5 +1,7 @@
 import hasClass from 'dom-helpers/hasClass';
 import CSSTransition from '../src/CSSTransition';
+import { canFindDOMNode, MSG_NOT_FOUND } from '../src/utils/findNode';
+import silenceJsxTransformWarning from './silenceJsxWarning';
 
 let React;
 let TransitionGroup;
@@ -26,6 +28,7 @@ describe('CSSTransitionGroup', () => {
     jest.useFakeTimers();
 
     React = require('react');
+    silenceJsxTransformWarning(React);
     const testUtils = require('./utils');
     act = testUtils.act;
     const baseRender = testUtils.render;
@@ -146,6 +149,10 @@ describe('CSSTransitionGroup', () => {
 
   it('should work with a child which renders as null', () => {
     const NullComponent = () => null;
+    // On React 19 there is nothing to find for a child that renders null.
+    const warnSpy = canFindDOMNode
+      ? null
+      : jest.spyOn(console, 'warn').mockImplementation(() => {});
     // Testing the whole lifecycle of entering and exiting,
     // because those lifecycle methods used to fail when the DOM node was null.
     render(<TransitionGroup />, container);
@@ -158,6 +165,10 @@ describe('CSSTransitionGroup', () => {
       container
     );
     render(<TransitionGroup />, container);
+    if (warnSpy) {
+      expect(warnSpy).toHaveBeenCalledWith(MSG_NOT_FOUND);
+      warnSpy.mockRestore();
+    }
   });
 
   it('should transition from one to null', () => {
