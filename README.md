@@ -16,6 +16,18 @@ npm, in `package.json`:
 "overrides": { "react-transition-group": "npm:@nerdnog/react-transition-group@^4.5.0" }
 ```
 
+That works when react-transition-group comes only through your libraries. If it's in your own `dependencies`, npm refuses that override (`EOVERRIDE`), so change the dependency instead:
+
+```json
+"react-transition-group": "npm:@nerdnog/react-transition-group@^4.5.0"
+```
+
+and, if your libraries use it too, add:
+
+```json
+"overrides": { "react-transition-group": "$react-transition-group" }
+```
+
 Yarn, in `package.json`:
 
 ```json
@@ -40,10 +52,12 @@ The only change is how a transition finds the element to animate when you don't 
 
 1. On React 16 to 18 it calls `findDOMNode`, exactly as 4.4.5 does. Nothing changes there.
 2. On React 19 it reads the element from React's internal records.
-3. If that fails, it uses a ref the transition adds to its child. That ref can land on an inner element if the child forwards it, so pass `nodeRef` when that matters.
+3. If that fails, it uses a ref the transition adds to its child. On React 19 that ref is only added to DOM elements (like `<div>`) and `forwardRef` components; other children skip this step. The ref can land on an inner element if the child forwards it, so pass `nodeRef` when that matters.
 4. If there's still no element, the transition finishes at once, as 4.4.5 did when it found none.
 
-Two warnings, shown only in development builds and once per component: one when the element came from the child's ref (step 3), and one when no element was found (step 4). The `nodeRef` prop works as before and skips all of this.
+Render-prop children (`{state => ...}`, as react-bootstrap 1's `Collapse` and `Fade` and reactstrap's `CarouselItem` use) rely only on step 2, since no ref can be attached to them.
+
+Two warnings, shown only in development builds and at most once each per transition instance: one when the element came from the child's ref (step 3), and one when no element was found (step 4). The `nodeRef` prop works as before and skips all of this.
 
 ## Not covered
 
@@ -56,7 +70,7 @@ This is a fork of [react-transition-group](https://github.com/reactjs/react-tran
 
 ## Original readme
 
-The rest of this page is the original project's readme, unchanged except that its headings moved down one level. Links in it point to the original project.
+The rest of this page is the original project's readme, unchanged except that its headings moved down one level and its relative link to `Migration.md` became a full link to the original project's copy. Links in it point to the original project.
 
 ## react-transition-group [![npm][npm-badge]][npm]
 
